@@ -1,0 +1,57 @@
+
+The CTE Extractor program is a program written in ANSI C that 
+can extract the data from CTE128 and CTE64 tape 
+data files.  It has (so far) only been tested on CTE64, however.
+
+The usage and command line arguments are given below:
+
+Usage: cte [args] < input data_file > output data_file
+Where args are one or more of:
+ -h            prints this help message and exits.
+ -v            verbosely prints out data
+ -s            prints statistics
+ -q            quiet - supresses some error messages.
+ -i            ignore - ignore bad checksums.
+ -o <format>   output style (on of: ascii, binary, debug, channel <int>)
+	       ( default ascii ).
+
+ input data_file  -  A file of CTE tape data
+ output data_file -  A file in the selected output format
+
+In testing, I noticed that many of the checksum errors were caused by 
+single bit errors in the data stream.  Therefore, most of the time it seems
+to be safe to use the "-i" ignore checksum error flag.  Also, there were a 
+few cases where a whole byte was missing in the data stream.  I have attempted
+to compensate for this.  Likewise, an error in the time field has been seen
+occasionally.  I have sttempted to compensate for this as well.  
+
+It would be very easy to modify the program to output in a new custom
+format.  A new output subroutine must be written, and a new command line
+flag added - or replace one of the current formats.  Comments are in
+the code which designate where to add code.
+
+Current output formats:
+
+Ascii: (all data items are sequences of ascii characters)
+> index time channel1 channel2 ... channel64
+> index time channel1 channel2 ... channel64
+> ...
+> index time channel1 channel2 ... channel64
+> <EOF>
+
+Binary: (all data items are in 32 bit floating point)
+> linesize_in_bytes
+> index time channel1 channel2 ... channel64
+> index time channel1 channel2 ... channel64
+> ...
+> index time channel1 channel2 ... channel64
+> <EOF>
+
+Channel: (all data items are in 32 bit floating point)
+> float float .... float 
+> <EOF>
+
+Bugs reports and comments should be sent to 
+John Kassebaum [jak@ecn.purdue.edu].
+
+
