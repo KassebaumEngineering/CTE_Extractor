@@ -3,17 +3,17 @@
  *
  * C Program for Extracting CTE Taped Data  
  *
- *  $Id: cte.c,v 1.1 1994/12/06 05:23:38 jak Exp $
+ *  $Id: cte.c,v 1.1.1.1 1994/12/06 05:23:39 jak Exp $
  *
  *  Author: John Kassebaum
  *
  * $Log: cte.c,v $
- * Revision 1.1  1994/12/06 05:23:38  jak
- * Initial revision
+ * Revision 1.1.1.1  1994/12/06 05:23:39  jak
+ * Initial import of CTE_Extractor code.   -jak
  *
 */
 
-static char rcsid_cte_c[] = "$Id: cte.c,v 1.1 1994/12/06 05:23:38 jak Exp $";
+static char rcsid_cte_c[] = "$Id: cte.c,v 1.1.1.1 1994/12/06 05:23:39 jak Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
