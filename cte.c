@@ -3,17 +3,17 @@
  *
  * C Program for Extracting CTE Taped Data  
  *
- *  $Id: cte.c,v 1.1 1994/12/06 05:23:38 jak Exp $
+ *  $Id: cte.c,v 1.2 1994/12/10 20:28:37 jak Exp $
  *
  *  Author: John Kassebaum
  *
  * $Log: cte.c,v $
- * Revision 1.1  1994/12/06 05:23:38  jak
- * Initial revision
+ * Revision 1.2  1994/12/10 20:28:37  jak
+ * Fixed a bug in the channel code.  -jak
  *
 */
 
-static char rcsid_cte_c[] = "$Id: cte.c,v 1.1 1994/12/06 05:23:38 jak Exp $";
+static char rcsid_cte_c[] = "$Id: cte.c,v 1.2 1994/12/10 20:28:37 jak Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -519,7 +519,7 @@ void print_binary(Sample_p sample , enum CTE_Type the_type, int index)
 /*
  * Add user defined printing routine here
  */
-int print_custom(Sample_p sample, enum CTE_Type the_type, int index, int channel )
+int print_channel(Sample_p sample, enum CTE_Type the_type, int index, int channel )
 {
     float datum;
 	int j;
@@ -542,6 +542,7 @@ int print_custom(Sample_p sample, enum CTE_Type the_type, int index, int channel
 						+ (((int) sample.cte128->lsbs1 & 0x0f))  - 0x07ff);
                 write(1, &datum, sizeof(float));
 			} else if ( (channel > 2) && (channel < 127)) {
+			    j = channel - 2;
 			    switch ( (channel - 2) % 4 ){
 				    case 0:
 						datum = ((((int) sample.cte128->data[j].msb1 )<< 4) 
@@ -588,6 +589,7 @@ int print_custom(Sample_p sample, enum CTE_Type the_type, int index, int channel
 						+ (((int) sample.cte64->lsbs1 & 0x0f))  - 0x07ff);
                 write(1, &datum, sizeof(float));
 			} else if ( (channel > 2) && (channel < 63)) {
+			    j = channel - 2;
 			    switch ( (channel - 2) % 4 ){
 				    case 0:
 						datum = ((((int) sample.cte64->data[j].msb1 )<< 4) 
@@ -633,7 +635,7 @@ int print_custom(Sample_p sample, enum CTE_Type the_type, int index, int channel
 
 main(int argc,char **argv)
 {
-    int               verbose, stats, quiet, ignore, channel;
+    int               verbose, stats, quiet, ignore, channel_num;
     int               flag, alpha_state, tempi, bad_chksum;
     long int          c,i,j,k, chksum;
     long int          blocksize;
@@ -647,14 +649,14 @@ main(int argc,char **argv)
     unsigned char    *data;
     char              alpha_string[20], alpha_index;
     int               fd, bytes_read;
-    enum ostyle { ascii, binary, debug, custom } output;
+    enum ostyle { ascii, binary, debug, channel } output;
 
     fd = 0;    /* note: stdin is always fd = 0 */
     verbose = 0;
     stats = 0;
     quiet = 0;
     ignore = 0;
-	channel = 0;
+	channel_num = 0;
     output = ascii;
     bzero( alpha_string, 20 );
         
@@ -683,13 +685,12 @@ main(int argc,char **argv)
             } else if (!strcmp( argv[ c ],"debug")) {
                 output = debug;
             } else if (!strcmp( argv[ c ],"channel")) {
-                output = custom;
+                output = channel;
 				c++;
-				channel = atoi( argv[c] );
+				channel_num = atoi( argv[c] );
             } else {
                 goto usage;
             }
-            ignore = 1;
         } else if (!strcmp( argv[ c ],"-i")){
             ignore = 1;
         } else if (!strcmp( argv[ c ],"-q")){
@@ -712,8 +713,8 @@ main(int argc,char **argv)
             fprintf( stderr, "Output Style: binary\n"); 
         } else if( output == debug ) {
             fprintf( stderr, "Output Style: debug\n"); 
-        } else if( output == custom ) {
-            fprintf( stderr, "Output Style: custom\n"); 
+        } else if( output == channel ) {
+            fprintf( stderr, "Output Style: channel %d\n", channel_num); 
         }
      }
   /* 
@@ -877,8 +878,8 @@ main(int argc,char **argv)
                     print_gnuplot( sample, the_cte_type, sample_count );
                 } else if (output == binary ) {
                     print_binary( sample, the_cte_type, sample_count );
-                } else if (output == custom ) {
-                    print_custom( sample, the_cte_type, sample_count, channel);
+                } else if (output == channel ) {
+                    print_channel( sample, the_cte_type, sample_count, channel_num);
                 } 
                 break;
             case CTE64:
@@ -954,8 +955,8 @@ main(int argc,char **argv)
                     print_gnuplot( sample, the_cte_type, sample_count );
                 } else if (output == binary) {
                     print_binary( sample, the_cte_type, sample_count );
-                } else if (output == custom ) {
-                    print_custom( sample, the_cte_type, sample_count, channel );
+                } else if (output == channel ) {
+                    print_channel( sample, the_cte_type, sample_count, channel_num );
                 } 
                 break;
         }

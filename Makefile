@@ -1,12 +1,12 @@
 #
 # Makefile for CTE tape reading program
 #
-# $Id: Makefile,v 1.1 1994/12/06 05:23:38 jak Exp $
+# $Id: Makefile,v 1.2 1994/12/10 20:28:33 jak Exp $
 #
 # History:
 # $Log: Makefile,v $
-# Revision 1.1  1994/12/06 05:23:38  jak
-# Initial revision
+# Revision 1.2  1994/12/10 20:28:33  jak
+# Fixed a bug in the channel code.  -jak
 #
 #
 

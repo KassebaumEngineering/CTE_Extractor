@@ -12,8 +12,7 @@ Where args are one or more of:
  -s            prints statistics
  -q            quiet - supresses some error messages.
  -i            ignore - ignore bad checksums.
- -o <format>   output style (on of: ascii, binary, debug, channel <int>)
-	       ( default ascii ).
+ -o <format>   output style (on of: ascii, binary, debug) default ascii.
 
  input data_file  -  A file of CTE tape data
  output data_file -  A file in the selected output format
@@ -45,10 +44,6 @@ Binary: (all data items are in 32 bit floating point)
 > index time channel1 channel2 ... channel64
 > ...
 > index time channel1 channel2 ... channel64
-> <EOF>
-
-Channel: (all data items are in 32 bit floating point)
-> float float .... float 
 > <EOF>
 
 Bugs reports and comments should be sent to 
