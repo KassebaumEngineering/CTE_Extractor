@@ -3,17 +3,20 @@
  *
  * C Program for Extracting CTE Taped Data  
  *
- *  $Id: cte.c,v 1.2 1994/12/10 20:28:37 jak Exp $
+ *  $Id: cte.c,v 1.3 1994/12/19 15:17:52 jak Exp $
  *
  *  Author: John Kassebaum
  *
  * $Log: cte.c,v $
- * Revision 1.2  1994/12/10 20:28:37  jak
+ * Revision 1.3  1994/12/19 15:17:52  jak
+ * Made changes at Work to the cte - now reads the alpha bytes! -jak
+ *
+ * Revision 1.2  1994/12/10  20:28:37  jak
  * Fixed a bug in the channel code.  -jak
  *
 */
 
-static char rcsid_cte_c[] = "$Id: cte.c,v 1.2 1994/12/10 20:28:37 jak Exp $";
+static char rcsid_cte_c[] = "$Id: cte.c,v 1.3 1994/12/19 15:17:52 jak Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -647,9 +650,15 @@ main(int argc,char **argv)
     enum CTE_Type     the_cte_type;
     Sample_p          sample;
     unsigned char    *data;
-    char              alpha_string[20], alpha_index;
+	char              Date_String[12];
+	unsigned short    Calibration_Table[128];
+    char              alpha_string[130];
+	int               alpha_index;
     int               fd, bytes_read;
     enum ostyle { ascii, binary, debug, channel } output;
+	long int          startTime, finishTime;
+	
+	startTime = finishTime = -1;
 
     fd = 0;    /* note: stdin is always fd = 0 */
     verbose = 0;
@@ -854,20 +863,43 @@ main(int argc,char **argv)
                 } else {
                     last_time = tempi;
 				}
-       
+				
+                if( startTime == -1 ) 
+				    startTime = tempi;
+					
                 switch( alpha_state ){
                     case 0:
                         if( sample.cte128->alpha == 0xdd )
                             alpha_state = 1;
+                        if( sample.cte128->alpha == 0x77 )
+                            alpha_state = 2;
                         break;
                     case 1:
                         alpha_string[alpha_index++] = sample.cte128->alpha ;
                         if( (sample.cte128->alpha == 0x00) || (alpha_index >= 11)) {
+						    bcopy( alpha_string, Date_String, alpha_index);
                             alpha_state = 0;
                             alpha_index = 0;
-                            if( verbose ) fprintf( stderr, "\nalpha_string = %s\n", alpha_string);
+                            if( verbose ) fprintf( stderr, "\ndate_string = %s\n", alpha_string);
                         }
                         break;
+                    case 2:
+                        alpha_string[alpha_index++] = sample.cte128->alpha ;
+                        if( (sample.cte128->alpha == 0x00) || (alpha_index >= 256)) {
+						    int i;
+						    for( i=0; i< alpha_index; i+=2 ){
+							    Calibration_Table[i/2] = SHORT_OF(alpha_string[i+1],alpha_string[i]);
+							}
+                            if( verbose ) {
+							    fprintf( stderr, "\ncalibration_table = \n");
+						        for( i=0; i< 128; i++ ){
+							        fprintf( stderr, "%d - %d, ",i, Calibration_Table[i]);
+							    }
+							} 
+                            alpha_state = 0;
+                            alpha_index = 0;
+                        }
+					    break;
                 }
 
                 Slow_Vars( sample.cte128->alpha2 );
@@ -932,19 +964,42 @@ main(int argc,char **argv)
 				    last_time = tempi;
 				}
 					
+                if( startTime == -1 ) 
+				    startTime = tempi;
+
                 switch( alpha_state ){
                     case 0:
                         if( sample.cte64->alpha == 0xdd )
                             alpha_state = 1;
+                        if( sample.cte64->alpha == 0x77 )
+                            alpha_state = 2;
                         break;
                     case 1:
                         alpha_string[alpha_index++] = sample.cte64->alpha ;
                         if( (sample.cte64->alpha == 0x00) || (alpha_index >= 11)) {
+						    bcopy( alpha_string, Date_String, alpha_index);
                             alpha_state = 0;
                             alpha_index = 0;
-                            if( verbose ) fprintf( stderr, "\nalpha_string = %s\n", alpha_string);
+                            if( verbose ) fprintf( stderr, "\ndate_string = %s\n", alpha_string);
                         }
                         break;
+                    case 2:
+                        alpha_string[alpha_index++] = sample.cte64->alpha ;
+                        if( (sample.cte64->alpha == 0x00) || (alpha_index >= 128)) {
+						    int i;
+						    for( i=0; i< alpha_index; i+=2 ){
+							    Calibration_Table[i/2] = SHORT_OF(alpha_string[i+1],alpha_string[i]);
+							}
+                            if( verbose ) {
+							    fprintf( stderr, "\ncalibration_table = \n");
+						        for( i=0; i< 64; i++ ){
+							        fprintf( stderr, "%d - %d, ",i, Calibration_Table[i]);
+							    }
+							} 
+                            alpha_state = 0;
+                            alpha_index = 0;
+                        }
+					    break;
                 }
 				
                 Slow_Vars( sample.cte64->alpha2 );
@@ -1046,10 +1101,34 @@ main(int argc,char **argv)
 
 
     }
+
+	finishTime = tempi;
     
     if (stats) {
         fprintf(stderr, "%d samples recovered out of %d.\n", sample_count, total_count);
         fprintf(stderr, "%d samples were damaged.\n", bad_count);
+		fprintf(stderr, "Date String = %s\n", Date_String);
+		{
+		    int sh,sm,ss, fh,fm,fs;
+			sh = startTime/720000;  startTime -= sh* 720000;
+			sm = startTime/12000;   startTime -= sm* 12000;
+			ss = startTime/200;     startTime -= ss* 200;
+			fh = finishTime/720000; finishTime -= fh* 720000;
+			fm = finishTime/12000;  finishTime -= fm* 12000;
+			fs = finishTime/200;    finishTime -= fs* 200;
+		    fprintf(stderr, "Time %2.2d:%2.2d:%2.2d.%.2d - %2.2d:%2.2d:%2.2d.%.2d\n",sh,sm,ss, startTime/2,  fh,fm,fs, finishTime/2);
+		}
+		if( output == channel ){
+		    fprintf(stderr, "Calibration Factor (channel %d) = %d\n", channel_num, Calibration_Table[channel_num-1]);
+		} else {
+			fprintf(stderr, "Calibration Table = \n");
+			{
+				int i;
+				for(i=0; i<(the_cte_type == CTE64?64:128); i++){
+					fprintf(stderr, "\t%d -> %d\n", i+1, Calibration_Table[i]);
+				}
+			}
+		}
     }
 
     if( bytes_read == -1 ) {
